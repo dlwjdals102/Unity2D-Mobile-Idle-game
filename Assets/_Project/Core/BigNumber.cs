@@ -157,10 +157,18 @@ namespace Game.Core
         public override string ToString()
         {
             if (Mantissa == 0d) return "0";
-            if (Exponent < 3) return Format(ToDouble());
 
-            int tier = Exponent / 3;
+            int tier = Exponent < 3 ? 0 : Exponent / 3;
             double scaled = Mantissa * Pow10(Exponent - tier * 3);
+
+            // 소수 둘째 자리로 반올림하면 999.999 같은 값이 1000이 되어 단위가 한 칸 밀린다.
+            // 그대로 두면 999999가 "1M"이 아니라 "1000K"로 나오므로, 이때는 단위를 올린다.
+            if (Math.Abs(Math.Round(scaled, 2)) >= 1000d)
+            {
+                scaled /= 1000d;
+                tier++;
+            }
+
             return Format(scaled) + SuffixFor(tier);
         }
 

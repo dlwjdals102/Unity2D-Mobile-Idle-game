@@ -322,6 +322,28 @@ namespace Game.Core.Tests
             Assert.AreEqual("-1.5M", new BigNumber(-1.5d, 6).ToString());
         }
 
+        [Test]
+        public void ToString_RoundingUpCarriesIntoTheNextSuffix()
+        {
+            // 999999는 K 단위로 999.999인데, 소수 둘째 자리 반올림에서 1000이 된다.
+            // 단위를 올리지 않으면 "1000K"라는 잘못된 표기가 나온다.
+            Assert.AreEqual("1M", new BigNumber(999999d, 0).ToString());
+            Assert.AreEqual("1K", new BigNumber(999.999d, 0).ToString());
+            Assert.AreEqual("1B", new BigNumber(999999999d, 0).ToString());
+        }
+
+        [Test]
+        public void ToString_RoundingUpCarriesForNegativeValues()
+        {
+            Assert.AreEqual("-1M", new BigNumber(-999999d, 0).ToString());
+        }
+
+        [Test]
+        public void ToString_DoesNotCarryWhenRoundingStaysBelowThousand()
+        {
+            Assert.AreEqual("999.99K", new BigNumber(999994d, 0).ToString());
+        }
+
         // ---------- 동등성 규약 ----------
 
         [Test]
