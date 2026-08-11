@@ -15,6 +15,7 @@ namespace Game.Presentation
     {
         [SerializeField] private TMP_Text _floorLabel;
         [SerializeField] private TMP_Text _goldLabel;
+        [SerializeField] private TMP_Text _diamondLabel;
         [SerializeField] private TMP_Text _killProgressLabel;
         [SerializeField] private TMP_Text _bossTimerLabel;
         [SerializeField] private Image _healthBarFill;
@@ -26,6 +27,7 @@ namespace Game.Presentation
         private int _shownKills = -1;
         private int _shownRequiredKills = -1;
         private int _shownBossTenths = -1;
+        private int _shownDiamonds = -1;
         private BigNumber _shownGold = new BigNumber(-1d, 0);
 
         public void Bind(BattleRunner battle) => _battle = battle;
@@ -51,6 +53,12 @@ namespace Game.Presentation
             {
                 _shownGold = _battle.Gold;
                 _goldLabel.text = _shownGold.ToString();
+            }
+
+            if (_battle.Diamonds != _shownDiamonds)
+            {
+                _shownDiamonds = _battle.Diamonds;
+                _diamondLabel.text = _shownDiamonds.ToString();
             }
 
             _healthBarFill.fillAmount = HealthRatio();

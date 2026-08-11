@@ -98,7 +98,8 @@ namespace Game.Presentation
             return new BattleProgress(
                 saved.floor,
                 saved.killsOnFloor,
-                new BigNumber(saved.goldMantissa, saved.goldExponent));
+                new BigNumber(saved.goldMantissa, saved.goldExponent),
+                saved.diamonds);
         }
 
         private void Save()
@@ -115,6 +116,7 @@ namespace Game.Presentation
                 killsOnFloor = progress.KillsOnFloor,
                 goldMantissa = progress.Gold.Mantissa,
                 goldExponent = progress.Gold.Exponent,
+                diamonds = progress.Diamonds,
                 attackPowerLevel = _upgrades.AttackPower.Level,
                 criticalMultiplierLevel = _upgrades.CriticalMultiplier.Level
             });

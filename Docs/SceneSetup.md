@@ -14,6 +14,7 @@ SampleScene
 └── Canvas                   BattleHud
     ├── FloorLabel           TextMeshProUGUI
     ├── GoldLabel            TextMeshProUGUI
+    ├── DiamondLabel         TextMeshProUGUI
     ├── KillProgressLabel    TextMeshProUGUI
     ├── BossTimerLabel       TextMeshProUGUI
     ├── HealthBar
@@ -84,6 +85,7 @@ Game 뷰 좌상단 해상도 드롭다운 → `+` → **1080 x 1920 Portrait** �
 |---|---|---|
 | `FloorLabel` | 상단 중앙 | `12층` |
 | `GoldLabel` | 상단 우측 | `1.23K` |
+| `DiamondLabel` | 상단 우측, 골드 아래 | `15` |
 | `KillProgressLabel` | 상단 중앙, 층 아래 | `3 / 10` |
 | `BossTimerLabel` | 화면 중앙 상단 | `28.4` |
 
@@ -110,6 +112,7 @@ Game 뷰 좌상단 해상도 드롭다운 → `+` → **1080 x 1920 Portrait** �
 |---|---|
 | Floor Label | `FloorLabel` |
 | Gold Label | `GoldLabel` |
+| Diamond Label | `DiamondLabel` |
 | Kill Progress Label | `KillProgressLabel` |
 | Boss Timer Label | `BossTimerLabel` |
 | Health Bar Fill | `Fill` |
