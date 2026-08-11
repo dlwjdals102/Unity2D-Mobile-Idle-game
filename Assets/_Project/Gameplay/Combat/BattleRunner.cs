@@ -74,6 +74,18 @@ namespace Game.Gameplay.Combat
         public BattleProgress Progress => new BattleProgress(Floor, KillsOnFloor, Gold);
 
         /// <summary>
+        /// 골드가 충분하면 차감하고 <c>true</c>. 부족하면 아무것도 하지 않고 <c>false</c>.
+        /// 확인과 차감이 갈라지면 잔액이 음수가 될 수 있어 한 번에 처리한다.
+        /// </summary>
+        public bool TrySpendGold(BigNumber amount)
+        {
+            if (Gold < amount) return false;
+
+            Gold -= amount;
+            return true;
+        }
+
+        /// <summary>
         /// <paramref name="deltaSeconds"/>만큼 전투를 진행한다. 델타가 길면 그 안에 들어가는 공격을
         /// 모두 처리하므로 프레임이 끊겨도 데미지가 유실되지 않는다.
         /// 다만 몇 시간 단위인 오프라인 보상에는 쓸 수 없다. 그쪽은 시뮬레이션이 아니라 수식으로 계산한다.

@@ -266,6 +266,38 @@ namespace Game.Gameplay.Tests
             Assert.AreEqual(0, kills);
         }
 
+        // ---------- 골드 사용 ----------
+
+        [Test]
+        public void TrySpendGold_WithEnoughGold_Deducts()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+            runner.Tick(1d);   // 5골드 획득
+
+            Assert.IsTrue(runner.TrySpendGold(2d));
+            AssertValue(runner.Gold, FirstFloorGoldReward - 2d);
+        }
+
+        [Test]
+        public void TrySpendGold_WithoutEnoughGold_ChangesNothing()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+            runner.Tick(1d);
+
+            Assert.IsFalse(runner.TrySpendGold(FirstFloorGoldReward + 1d));
+            AssertValue(runner.Gold, FirstFloorGoldReward);
+        }
+
+        [Test]
+        public void TrySpendGold_ExactBalance_Succeeds()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+            runner.Tick(1d);
+
+            Assert.IsTrue(runner.TrySpendGold(FirstFloorGoldReward));
+            AssertValue(runner.Gold, 0d);
+        }
+
         // ---------- 진행 상태 저장과 복원 ----------
 
         [Test]
