@@ -116,16 +116,62 @@ Game 뷰 좌상단 해상도 드롭다운 → `+` → **1080 x 1920 Portrait** �
 
 ## 5. 강화 버튼 (W5)
 
-1. Canvas 우클릭 → `Create Empty`, 이름 `UpgradePanel`
-   - 앵커를 **하단**에 붙이고 화면 아래쪽 1/4 정도를 차지하게 한다
-   - `Add Component` → `Vertical Layout Group` (버튼 두 개를 세로로 쌓는다)
-2. `UpgradePanel` 우클릭 → `UI > Button - TextMeshPro`, 이름 `AttackPowerButton`
-3. 자동으로 생긴 자식 `Text (TMP)`의 이름을 `NameLabel`로 변경
-4. `AttackPowerButton` 우클릭 → `UI > Text - TextMeshPro`를 두 번 만들어
-   `LevelLabel`, `CostLabel`로 이름 변경. 버튼 안에서 겹치지 않게 배치한다
-   - 예: NameLabel 왼쪽, LevelLabel 가운데, CostLabel 오른쪽
-5. `AttackPowerButton`에 `Add Component` → **StatUpgradeButton**
-6. 인스펙터 연결
+> **Layout Group을 쓰지 않는다.** 버튼이 두 개뿐이라 앵커로 영역을 나누는 쪽이 단순하고,
+> 무엇보다 결과가 예측 가능하다. Layout Group은 자식의 위치를 자기가 소유하기 때문에
+> 손으로 옮길 수 없고, Control Child Size가 꺼져 있으면 크기도 그대로 둬서 혼란스럽다.
+
+### 앵커를 다룰 때 반드시 지킬 것
+
+인스펙터에서 **Anchor Min/Max를 숫자로 바꿔도 사각형은 원래 자리에 그대로 남는다.**
+Unity가 위치를 유지하려고 오프셋에 보정값을 넣기 때문이다.
+그래서 앵커를 바꾼 뒤에는 **항상 Left / Right / Top / Bottom을 전부 0으로** 만들어야 한다.
+
+(Anchor Min/Max가 두 축 모두 벌어져 있으면 인스펙터에 Pos/Width/Height 대신
+Left/Right/Top/Bottom이 표시된다.)
+
+### 5-1. UpgradePanel
+
+Canvas 우클릭 → `Create Empty`, 이름 `UpgradePanel`. RectTransform에 아래를 넣는다.
+
+| 항목 | 값 | 의미 |
+|---|---|---|
+| Anchor Min | X `0` / Y `0` | 화면 하단에 가로로 꽉 |
+| Anchor Max | X `1` / Y `0.28` | 아래쪽 28%를 차지 |
+| Left / Right | `40` / `40` | 좌우 여백 |
+| Top / Bottom | `0` / `40` | 아래 여백 |
+
+### 5-2. AttackPowerButton
+
+`UpgradePanel` 우클릭 → `UI > Button - TextMeshPro`, 이름 `AttackPowerButton`.
+
+| 항목 | 값 |
+|---|---|
+| Anchor Min | X `0` / Y `0.55` |
+| Anchor Max | X `1` / Y `1` |
+| Left / Right / Top / Bottom | 전부 `0` |
+
+패널 위쪽 절반을 채운다.
+
+### 5-3. 버튼 안의 라벨 3개
+
+버튼을 만들면 자식 `Text (TMP)`가 하나 딸려 온다. 이름을 `NameLabel`로 바꾼다.
+그다음 `AttackPowerButton` 우클릭 → `UI > Text - TextMeshPro`를 **두 번** 만들어
+`LevelLabel`, `CostLabel`로 이름을 바꾼다.
+
+세 라벨이 가로를 나눠 갖도록 앵커를 준다. **오프셋을 0으로 만드는 것을 잊지 말 것.**
+
+| 라벨 | Anchor Min | Anchor Max | Left | Right | Top/Bottom | 정렬 |
+|---|---|---|---|---|---|---|
+| `NameLabel` | `0`, `0` | `0.45`, `1` | `24` | `0` | `0` | 좌 / 중앙 |
+| `LevelLabel` | `0.45`, `0` | `0.70`, `1` | `0` | `0` | `0` | 중앙 / 중앙 |
+| `CostLabel` | `0.70`, `0` | `1`, `1` | `0` | `24` | `0` | 우 / 중앙 |
+
+정렬은 TextMeshPro 컴포넌트의 `Alignment`에서 가로/세로를 각각 지정한다.
+글자가 잘리면 `Auto Size`를 켜거나 Font Size를 줄인다.
+
+### 5-4. 스크립트 연결
+
+`AttackPowerButton`에 `Add Component` → **StatUpgradeButton**
 
 | 필드 | 값 |
 |---|---|
@@ -135,9 +181,16 @@ Game 뷰 좌상단 해상도 드롭다운 → `+` → **1080 x 1920 Portrait** �
 | Cost Label | `CostLabel` |
 | Button | `AttackPowerButton` 자신의 Button 컴포넌트 |
 
-7. `AttackPowerButton`을 복제(`Ctrl + D`)해 `CriticalMultiplierButton`으로 이름 변경
-   - **Display Name만 `치명타 배율`로 바꾼다.** 나머지 연결은 복제되면서 자기 자식을 가리킨다
-   - 복제 후 Button 필드가 원본을 가리키고 있지 않은지 확인한다
+### 5-5. 두 번째 버튼
+
+`AttackPowerButton`을 복제(`Ctrl + D`)해 `CriticalMultiplierButton`으로 이름을 바꾼다.
+복제하면 Unity가 계층 안쪽을 가리키던 참조를 새 사본으로 다시 이어주므로,
+**실제로 바꿀 것은 두 가지뿐이다.**
+
+| 항목 | 값 |
+|---|---|
+| Display Name | `치명타 배율` |
+| Anchor Min / Max | Y를 `0` / `0.45`로 (패널 아래쪽 절반) |
 
 > 버튼은 골드가 모자라면 자동으로 비활성(회색)이 된다. 코드가 `interactable`을 제어하므로
 > 인스펙터에서 직접 끄지 않는다.
@@ -203,4 +256,7 @@ Game 뷰 좌상단 해상도 드롭다운 → `+` → **1080 x 1920 Portrait** �
 | 체력 바가 안 줄어든다 | `Fill`의 Image Type이 `Filled`가 아니다 |
 | 강화 버튼이 계속 회색이다 | 정상이다. 골드가 비용보다 적으면 눌리지 않는다 |
 | 버튼을 눌러도 아무 일이 없다 | `StatUpgradeButton`의 Button 필드가 비었거나 다른 버튼을 가리킨다 |
-| 두 버튼이 같이 올라간다 | 5-7 복제 후 라벨/Button 연결이 원본을 가리키고 있다 |
+| 두 버튼이 같이 올라간다 | 5-5 복제 후 라벨/Button 연결이 원본을 가리키고 있다 |
+| 라벨 3개가 겹쳐 보인다 | 5-3의 앵커를 안 줬다. 새로 만든 TMP 텍스트는 기본이 중앙 200×50이라 전부 같은 자리에 생긴다 |
+| 앵커를 바꿨는데 사각형이 안 움직인다 | Left/Right/Top/Bottom에 보정값이 남아 있다. 전부 0으로 만든다 |
+| 자식을 손으로 옮겨도 제자리로 돌아온다 | 부모에 Layout Group이 붙어 있다. 이 가이드는 Layout Group을 쓰지 않는다 |
