@@ -63,6 +63,7 @@ EditMode 테스트로 검증된다. 지금 109개가 이 방식으로 돈다.
 | `DamagePopup` | 떠오르며 사라지는 데미지 숫자 하나 |
 | `DamagePopupSpawner` | 팝업 대여/반납, 살아 있는 팝업 갱신 |
 | `StatUpgradeButton` | 강화 하나를 사는 버튼 |
+| `DebugPanel` | 개발용 버튼 모음. 배포 빌드에서는 스스로 꺼진다 |
 
 ---
 

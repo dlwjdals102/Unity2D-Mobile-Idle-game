@@ -22,6 +22,9 @@ namespace Game.Presentation
         [SerializeField] private StatUpgradeButton _attackPowerButton;
         [SerializeField] private StatUpgradeButton _criticalMultiplierButton;
 
+        [Header("개발용 (없어도 된다)")]
+        [SerializeField] private DebugPanel _debugPanel;
+
         [Header("강화로 오르지 않는 스탯")]
         [SerializeField] private double _attacksPerSecond = 2d;
         [SerializeField] private double _criticalChance = 0.15d;
@@ -66,6 +69,9 @@ namespace Game.Presentation
             _popupSpawner.Bind(_battle);
             _attackPowerButton.Bind(_upgrades, _upgrades.AttackPower);
             _criticalMultiplierButton.Bind(_upgrades, _upgrades.CriticalMultiplier);
+
+            // 개발용이라 연결하지 않아도 정상 동작한다.
+            if (_debugPanel != null) _debugPanel.Bind(_battle);
         }
 
         private void Update()

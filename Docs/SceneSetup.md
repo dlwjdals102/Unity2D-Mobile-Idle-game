@@ -263,3 +263,25 @@ Canvas 우클릭 → `Create Empty`, 이름 `UpgradePanel`. RectTransform에 아
 | 라벨 3개가 겹쳐 보인다 | 5-3의 앵커를 안 줬다. 새로 만든 TMP 텍스트는 기본이 중앙 200×50이라 전부 같은 자리에 생긴다 |
 | 앵커를 바꿨는데 사각형이 안 움직인다 | Left/Right/Top/Bottom에 보정값이 남아 있다. 전부 0으로 만든다 |
 | 자식을 손으로 옮겨도 제자리로 돌아온다 | 부모에 Layout Group이 붙어 있다. 이 가이드는 Layout Group을 쓰지 않는다 |
+
+---
+
+## 부록. 개발용 디버그 패널 (선택)
+
+층이 오르기를 기다리지 않고 바로 다음 상태를 확인하기 위한 것이다.
+**연결하지 않아도 게임은 정상 동작한다.** `GameLoop`의 연결 검사 대상이 아니다.
+
+1. Canvas 우클릭 → `Create Empty`, 이름 `DebugPanel`
+   - 앵커를 화면 우측 상단 등 HUD와 겹치지 않는 곳에 둔다
+2. `DebugPanel` 우클릭 → `UI > Button - TextMeshPro`, 이름 `ClearFloorButton`
+   - 버튼 안 텍스트를 `층 클리어`로 바꾼다
+3. `DebugPanel`에 `Add Component` → **DebugPanel**
+4. `Clear Floor Button` 필드에 `ClearFloorButton` 연결
+5. `Game` 오브젝트의 `GameLoop` → **Debug Panel** 필드에 `DebugPanel` 연결
+
+누르면 현재 층의 남은 몬스터가 전부 처치되고 다음 층으로 넘어간다.
+**보상은 정상 처치와 동일하게 지급된다.** 골드가 쌓여야 강화를 바로 시험할 수 있기 때문이다.
+보스 층에서 누르면 다이아도 나온다.
+
+`DebugPanel`은 에디터와 개발 빌드에서만 살아 있고, 배포 빌드에서는 `Awake`에서 스스로 꺼진다.
+앞으로 필요한 디버그 기능이 생기면 이 패널에 버튼을 하나씩 추가한다.
