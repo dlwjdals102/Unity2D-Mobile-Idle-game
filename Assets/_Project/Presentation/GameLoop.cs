@@ -29,6 +29,7 @@ namespace Game.Presentation
         [SerializeField] private double _attacksPerSecond = 2d;
         [SerializeField] private double _criticalChance = 0.15d;
 
+        private CharacterStats _stats;
         private BattleRunner _battle;
         private StatUpgrades _upgrades;
         private SaveStore _saveStore;
@@ -47,7 +48,7 @@ namespace Game.Presentation
             }
 
             // 공격력과 치명타 배율은 StatUpgrades가 단계에서 계산해 채운다.
-            var stats = new CharacterStats
+            _stats = new CharacterStats
             {
                 AttacksPerSecond = _attacksPerSecond,
                 CriticalChance = _criticalChance
@@ -58,20 +59,24 @@ namespace Game.Presentation
                 data => JsonUtility.ToJson(data),
                 json => JsonUtility.FromJson<SaveData>(json));
 
-            bool hasSave = _saveStore.TryLoad(out SaveData saved);
+            if (_saveStore.TryLoad(out SaveData saved))
+            {
+                var progress = new BattleProgress(
+                    saved.floor,
+                    saved.killsOnFloor,
+                    new BigNumber(saved.goldMantissa, saved.goldExponent),
+                    saved.diamonds);
 
-            _battle = new BattleRunner(FloorFormula.Default, stats, new SystemRandomSource(), ReadProgress(hasSave, saved));
-            _upgrades = StatUpgrades.CreateDefault(stats, _battle);
-
-            if (hasSave) _upgrades.Restore(saved.attackPowerLevel, saved.criticalMultiplierLevel);
-
-            _hud.Bind(_battle);
-            _popupSpawner.Bind(_battle);
-            _attackPowerButton.Bind(_upgrades, _upgrades.AttackPower);
-            _criticalMultiplierButton.Bind(_upgrades, _upgrades.CriticalMultiplier);
+                StartSession(progress, saved.attackPowerLevel, saved.criticalMultiplierLevel);
+            }
+            else
+            {
+                StartSession(BattleProgress.Start, 0, 0);
+            }
 
             // 개발용이라 연결하지 않아도 정상 동작한다.
-            if (_debugPanel != null) _debugPanel.Bind(_battle);
+            // 세션이 아니라 GameLoop에 묶으므로, 리셋으로 러너가 바뀌어도 다시 연결할 필요가 없다.
+            if (_debugPanel != null) _debugPanel.Bind(this);
         }
 
         private void Update()
@@ -97,15 +102,36 @@ namespace Game.Presentation
 
         private void OnApplicationQuit() => Save();
 
-        private static BattleProgress ReadProgress(bool hasSave, SaveData saved)
-        {
-            if (!hasSave) return BattleProgress.Start;
+        // ---------- 개발용 ----------
 
-            return new BattleProgress(
-                saved.floor,
-                saved.killsOnFloor,
-                new BigNumber(saved.goldMantissa, saved.goldExponent),
-                saved.diamonds);
+        /// <summary>현재 층을 즉시 클리어한다.</summary>
+        public void ClearCurrentFloor() => _battle.ClearFloorImmediately();
+
+        /// <summary>
+        /// 세이브를 지우고 그 자리에서 새 게임을 시작한다.
+        /// 파일만 지우면 플레이 모드를 빠져나갈 때 종료 저장이 곧바로 되살리므로 상태까지 함께 되돌린다.
+        /// </summary>
+        public void ResetToNewGame()
+        {
+            _saveStore.Delete();
+            _secondsSinceLastSave = 0f;
+
+            StartSession(BattleProgress.Start, 0, 0);
+        }
+
+        // ---------- 내부 ----------
+
+        /// <summary>도메인 객체를 만들고 화면에 연결한다. 리셋 때 다시 호출된다.</summary>
+        private void StartSession(BattleProgress progress, int attackPowerLevel, int criticalMultiplierLevel)
+        {
+            _battle = new BattleRunner(FloorFormula.Default, _stats, new SystemRandomSource(), progress);
+            _upgrades = StatUpgrades.CreateDefault(_stats, _battle);
+            _upgrades.Restore(attackPowerLevel, criticalMultiplierLevel);
+
+            _hud.Bind(_battle);
+            _popupSpawner.Bind(_battle);
+            _attackPowerButton.Bind(_upgrades, _upgrades.AttackPower);
+            _criticalMultiplierButton.Bind(_upgrades, _upgrades.CriticalMultiplier);
         }
 
         private void Save()

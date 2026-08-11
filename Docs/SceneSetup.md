@@ -273,15 +273,40 @@ Canvas 우클릭 → `Create Empty`, 이름 `UpgradePanel`. RectTransform에 아
 
 1. Canvas 우클릭 → `Create Empty`, 이름 `DebugPanel`
    - 앵커를 화면 우측 상단 등 HUD와 겹치지 않는 곳에 둔다
-2. `DebugPanel` 우클릭 → `UI > Button - TextMeshPro`, 이름 `ClearFloorButton`
-   - 버튼 안 텍스트를 `층 클리어`로 바꾼다
+2. `DebugPanel` 우클릭 → `UI > Button - TextMeshPro`를 **두 개** 만든다
+
+| 이름 | 버튼 안 텍스트 |
+|---|---|
+| `ClearFloorButton` | `층 클리어` |
+| `DeleteSaveButton` | `세이브 삭제` |
+
 3. `DebugPanel`에 `Add Component` → **DebugPanel**
-4. `Clear Floor Button` 필드에 `ClearFloorButton` 연결
+4. 필드 연결
+
+| 필드 | 연결할 것 |
+|---|---|
+| Clear Floor Button | `ClearFloorButton` |
+| Delete Save Button | `DeleteSaveButton` |
+
 5. `Game` 오브젝트의 `GameLoop` → **Debug Panel** 필드에 `DebugPanel` 연결
 
-누르면 현재 층의 남은 몬스터가 전부 처치되고 다음 층으로 넘어간다.
+### 층 클리어
+
+현재 층의 남은 몬스터가 전부 처치되고 다음 층으로 넘어간다.
 **보상은 정상 처치와 동일하게 지급된다.** 골드가 쌓여야 강화를 바로 시험할 수 있기 때문이다.
 보스 층에서 누르면 다이아도 나온다.
+
+### 세이브 삭제
+
+파일을 지우고 **그 자리에서 새 게임을 시작한다.** 1층 / 골드 0 / 다이아 0 / 강화 0단계로 돌아간다.
+
+파일만 지우지 않는 이유가 있다. 플레이 모드를 빠져나갈 때 종료 저장이 실행되므로,
+상태를 그대로 두면 지운 파일이 곧바로 되살아난다.
+
+> `DebugPanel`이 전투 객체가 아니라 `GameLoop`을 들고 있는 것도 이 때문이다.
+> 리셋으로 전투가 새로 만들어져도 버려진 객체를 가리키지 않는다.
+
+---
 
 `DebugPanel`은 에디터와 개발 빌드에서만 살아 있고, 배포 빌드에서는 `Awake`에서 스스로 꺼진다.
 앞으로 필요한 디버그 기능이 생기면 이 패널에 버튼을 하나씩 추가한다.

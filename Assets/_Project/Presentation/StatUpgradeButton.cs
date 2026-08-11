@@ -35,9 +35,12 @@ namespace Game.Presentation
             _nameLabel.text = _displayName;
 
             // 첫 Refresh가 반드시 상태를 다시 쓰도록 시작값을 맞춰둔다.
+            _shownLevel = -1;
             _shownAffordable = false;
             _button.interactable = false;
 
+            // 세이브 리셋으로 Bind가 다시 불릴 수 있다. 그대로 더하면 한 번 눌러 두 번 사게 된다.
+            _button.onClick.RemoveListener(Purchase);
             _button.onClick.AddListener(Purchase);
         }
 
