@@ -4,22 +4,21 @@ using Game.Gameplay.Combat;
 namespace Game.Gameplay.Progression
 {
     /// <summary>
-    /// 스탯 강화 묶음. 구매하면 골드를 차감하고 단계를 올린 뒤 실제 전투 스탯에 반영한다.
-    /// 이 세 가지가 항상 같이 일어나도록 한곳에 묶어두었다.
+    /// 스탯 강화 묶음. 골드를 차감하고 단계를 올리는 것까지가 책임이다.
+    /// <para>
+    /// 전투 스탯에 반영하는 일은 하지 않는다. 장비도 같은 스탯에 기여하므로
+    /// 여러 곳에서 대입하면 서로를 덮어쓴다. 반영은 <c>StatComposer</c>가 혼자 한다.
+    /// </para>
     /// </summary>
     public sealed class StatUpgrades
     {
-        private readonly CharacterStats _stats;
         private readonly BattleRunner _battle;
 
-        public StatUpgrades(CharacterStats stats, BattleRunner battle, StatUpgrade attackPower, StatUpgrade criticalMultiplier)
+        public StatUpgrades(BattleRunner battle, StatUpgrade attackPower, StatUpgrade criticalMultiplier)
         {
-            _stats = stats ?? throw new ArgumentNullException(nameof(stats));
             _battle = battle ?? throw new ArgumentNullException(nameof(battle));
             AttackPower = attackPower ?? throw new ArgumentNullException(nameof(attackPower));
             CriticalMultiplier = criticalMultiplier ?? throw new ArgumentNullException(nameof(criticalMultiplier));
-
-            Apply();
         }
 
         public StatUpgrade AttackPower { get; }
@@ -27,9 +26,8 @@ namespace Game.Gameplay.Progression
         public StatUpgrade CriticalMultiplier { get; }
 
         /// <summary>기획서의 1차 밸런싱 값. 데이터 테이블이 생기면 그쪽으로 옮긴다.</summary>
-        public static StatUpgrades CreateDefault(CharacterStats stats, BattleRunner battle)
+        public static StatUpgrades CreateDefault(BattleRunner battle)
             => new StatUpgrades(
-                stats,
                 battle,
                 attackPower: new StatUpgrade(5d, 1.075d, 10d, 1.095d),
                 criticalMultiplier: new StatUpgrade(2d, 1.02d, 100d, 1.15d));
@@ -44,7 +42,6 @@ namespace Game.Gameplay.Progression
             if (!_battle.TrySpendGold(upgrade.Cost)) return false;
 
             upgrade.Increase();
-            Apply();
             return true;
         }
 
@@ -53,15 +50,6 @@ namespace Game.Gameplay.Progression
         {
             AttackPower.Restore(attackPowerLevel);
             CriticalMultiplier.Restore(criticalMultiplierLevel);
-            Apply();
-        }
-
-        private void Apply()
-        {
-            _stats.AttackPower = AttackPower.Value;
-
-            // 치명타 배율은 항상 한 자릿수 근처라 double로 내려도 정밀도 문제가 없다.
-            _stats.CriticalMultiplier = CriticalMultiplier.Value.ToDouble();
         }
     }
 }

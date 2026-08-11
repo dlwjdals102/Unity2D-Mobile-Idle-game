@@ -360,6 +360,18 @@ namespace Game.Gameplay.Tests
             Assert.AreEqual(0, kills);
         }
 
+        [Test]
+        public void GoldMultiplier_ScalesTheReward()
+        {
+            CharacterStats stats = Stats(FirstFloorMonsterHealth);
+            stats.GoldMultiplier = 2.5d;
+            var runner = CreateRunner(stats);
+
+            runner.Tick(1d);
+
+            AssertValue(runner.Gold, FirstFloorGoldReward * 2.5d);
+        }
+
         // ---------- 골드 사용 ----------
 
         [Test]

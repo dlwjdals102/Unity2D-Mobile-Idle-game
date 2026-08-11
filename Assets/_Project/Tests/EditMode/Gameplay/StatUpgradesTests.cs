@@ -5,38 +5,40 @@ using NUnit.Framework;
 
 namespace Game.Gameplay.Tests
 {
+    /// <summary>
+    /// 구매·단계·비용만 확인한다. 전투 스탯에 어떻게 반영되는지는 StatComposerTests가 본다.
+    /// </summary>
     public class StatUpgradesTests
     {
-        private CharacterStats _stats;
         private BattleRunner _battle;
         private StatUpgrades _upgrades;
 
         private void StartWithGold(double gold)
         {
-            _stats = new CharacterStats
+            var stats = new CharacterStats
             {
                 AttacksPerSecond = 1d,
                 CriticalChance = 0d,
-                CriticalMultiplier = 2d
+                CriticalMultiplier = 2d,
+                AttackPower = 1d
             };
 
             _battle = new BattleRunner(
                 FloorFormula.Default,
-                _stats,
+                stats,
                 ScriptedRandomSource.NeverCritical,
                 new BattleProgress(1, 0, gold, 0));
 
-            _upgrades = StatUpgrades.CreateDefault(_stats, _battle);
+            _upgrades = StatUpgrades.CreateDefault(_battle);
         }
 
         [Test]
-        public void Construction_AppliesLevelZeroValuesToStats()
+        public void NewUpgrades_StartAtLevelZero()
         {
             StartWithGold(0d);
 
-            Assert.AreEqual(_upgrades.AttackPower.Value.ToDouble(), _stats.AttackPower.ToDouble(), 1e-9);
-            Assert.AreEqual(_upgrades.CriticalMultiplier.Value.ToDouble(), _stats.CriticalMultiplier, 1e-9);
             Assert.AreEqual(0, _upgrades.AttackPower.Level);
+            Assert.AreEqual(0, _upgrades.CriticalMultiplier.Level);
         }
 
         [Test]
@@ -64,18 +66,6 @@ namespace Game.Gameplay.Tests
         }
 
         [Test]
-        public void Purchase_RaisesTheStatUsedInCombat()
-        {
-            StartWithGold(1000d);
-            double attackBefore = _stats.AttackPower.ToDouble();
-
-            _upgrades.TryPurchase(_upgrades.AttackPower);
-
-            Assert.Greater(_stats.AttackPower.ToDouble(), attackBefore);
-            Assert.AreEqual(_upgrades.AttackPower.Value.ToDouble(), _stats.AttackPower.ToDouble(), 1e-9);
-        }
-
-        [Test]
         public void Purchase_RaisesTheCostOfTheNextLevel()
         {
             StartWithGold(1000d);
@@ -90,16 +80,14 @@ namespace Game.Gameplay.Tests
         public void Purchase_OnlyAffectsTheChosenUpgrade()
         {
             StartWithGold(1000d);
-            double criticalBefore = _stats.CriticalMultiplier;
 
             _upgrades.TryPurchase(_upgrades.AttackPower);
 
             Assert.AreEqual(0, _upgrades.CriticalMultiplier.Level);
-            Assert.AreEqual(criticalBefore, _stats.CriticalMultiplier, 1e-9);
         }
 
         [Test]
-        public void Restore_SetsLevelsAndAppliesThemWithoutCharging()
+        public void Restore_SetsLevelsWithoutCharging()
         {
             StartWithGold(1000d);
 
@@ -107,7 +95,6 @@ namespace Game.Gameplay.Tests
 
             Assert.AreEqual(12, _upgrades.AttackPower.Level);
             Assert.AreEqual(3, _upgrades.CriticalMultiplier.Level);
-            Assert.AreEqual(_upgrades.AttackPower.Value.ToDouble(), _stats.AttackPower.ToDouble(), 1e-9);
             Assert.AreEqual(1000d, _battle.Gold.ToDouble(), 1e-9, "복원은 골드를 쓰지 않는다");
         }
 

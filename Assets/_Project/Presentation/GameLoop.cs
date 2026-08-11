@@ -2,6 +2,7 @@ using System.IO;
 using Game.Core;
 using Game.Core.Save;
 using Game.Gameplay.Combat;
+using Game.Gameplay.Equipment;
 using Game.Gameplay.Progression;
 using UnityEngine;
 
@@ -31,7 +32,7 @@ namespace Game.Presentation
 
         private CharacterStats _stats;
         private BattleRunner _battle;
-        private StatUpgrades _upgrades;
+        private StatComposer _composer;
         private SaveStore _saveStore;
         private float _secondsSinceLastSave;
 
@@ -47,12 +48,8 @@ namespace Game.Presentation
                 return;
             }
 
-            // 공격력과 치명타 배율은 StatUpgrades가 단계에서 계산해 채운다.
-            _stats = new CharacterStats
-            {
-                AttacksPerSecond = _attacksPerSecond,
-                CriticalChance = _criticalChance
-            };
+            // 공격 주기를 뺀 나머지는 StatComposer가 강화 단계와 장비에서 계산해 채운다.
+            _stats = new CharacterStats { AttacksPerSecond = _attacksPerSecond };
 
             _saveStore = new SaveStore(
                 Path.Combine(Application.persistentDataPath, SaveFileName),
@@ -125,13 +122,19 @@ namespace Game.Presentation
         private void StartSession(BattleProgress progress, int attackPowerLevel, int criticalMultiplierLevel)
         {
             _battle = new BattleRunner(FloorFormula.Default, _stats, new SystemRandomSource(), progress);
-            _upgrades = StatUpgrades.CreateDefault(_stats, _battle);
-            _upgrades.Restore(attackPowerLevel, criticalMultiplierLevel);
+
+            _composer = new StatComposer(
+                _stats,
+                StatUpgrades.CreateDefault(_battle),
+                new Inventory(),
+                _criticalChance);
+
+            _composer.RestoreUpgrades(attackPowerLevel, criticalMultiplierLevel);
 
             _hud.Bind(_battle);
             _popupSpawner.Bind(_battle);
-            _attackPowerButton.Bind(_upgrades, _upgrades.AttackPower);
-            _criticalMultiplierButton.Bind(_upgrades, _upgrades.CriticalMultiplier);
+            _attackPowerButton.Bind(_composer, _composer.Upgrades.AttackPower);
+            _criticalMultiplierButton.Bind(_composer, _composer.Upgrades.CriticalMultiplier);
         }
 
         private void Save()
@@ -149,8 +152,8 @@ namespace Game.Presentation
                 goldMantissa = progress.Gold.Mantissa,
                 goldExponent = progress.Gold.Exponent,
                 diamonds = progress.Diamonds,
-                attackPowerLevel = _upgrades.AttackPower.Level,
-                criticalMultiplierLevel = _upgrades.CriticalMultiplier.Level
+                attackPowerLevel = _composer.Upgrades.AttackPower.Level,
+                criticalMultiplierLevel = _composer.Upgrades.CriticalMultiplier.Level
             });
         }
     }

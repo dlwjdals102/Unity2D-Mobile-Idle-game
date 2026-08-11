@@ -17,7 +17,7 @@ namespace Game.Presentation
         [SerializeField] private TMP_Text _costLabel;
         [SerializeField] private Button _button;
 
-        private StatUpgrades _upgrades;
+        private StatComposer _composer;
         private StatUpgrade _upgrade;
 
         // 화면에 지금 찍혀 있는 상태. 바뀔 때만 갱신해 매 프레임 문자열을 만들지 않는다.
@@ -27,9 +27,9 @@ namespace Game.Presentation
         // 비용은 단계에서 거듭제곱으로 계산되므로 매 프레임 다시 구하지 않고 단계가 바뀔 때만 갱신한다.
         private BigNumber _cachedCost;
 
-        public void Bind(StatUpgrades upgrades, StatUpgrade upgrade)
+        public void Bind(StatComposer composer, StatUpgrade upgrade)
         {
-            _upgrades = upgrades;
+            _composer = composer;
             _upgrade = upgrade;
 
             _nameLabel.text = _displayName;
@@ -62,6 +62,6 @@ namespace Game.Presentation
             _button.interactable = isAffordable;
         }
 
-        private void Purchase() => _upgrades.TryPurchase(_upgrade);
+        private void Purchase() => _composer.TryPurchaseUpgrade(_upgrade);
     }
 }

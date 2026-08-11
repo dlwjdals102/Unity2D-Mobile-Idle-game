@@ -145,7 +145,7 @@ namespace Game.Gameplay.Combat
 
         private void KillMonster()
         {
-            Gold += _formula.GoldReward(Floor);
+            Gold += _formula.GoldReward(Floor) * _stats.GoldMultiplier;
 
             // 층이 오르기 전에 판정해야 방금 잡은 몬스터가 보스였는지 알 수 있다.
             if (IsBossFloor) Diamonds += BossDiamondReward;

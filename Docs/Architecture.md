@@ -52,7 +52,11 @@ EditMode 테스트로 검증된다. 지금 109개가 이 방식으로 돈다.
 | `BattleProgress` | 층 · 처치수 · 골드의 스냅샷. 저장/복원 단위 |
 | `FloorFormula` | 층별 몬스터 체력과 골드 보상 |
 | `StatUpgrade` | 강화 하나. 단계 → 비용/효과 |
-| `StatUpgrades` | 구매(골드 차감 + 단계 상승 + 스탯 반영)를 묶는다 |
+| `StatUpgrades` | 골드를 차감하고 단계를 올린다 |
+| `EquipmentDefinition` | 장비 한 종류의 정의 (슬롯·등급·값) |
+| `EquipmentTable` | 존재하는 장비 전부. id로 찾는다 |
+| `Inventory` | 보유 목록과 슬롯별 착용 상태 |
+| `StatComposer` | **강화 + 장비를 합쳐 전투 스탯을 만든다.** `CharacterStats`의 유일한 작성자 |
 
 ### Game.Presentation — 화면
 
@@ -115,6 +119,8 @@ UI가 매 프레임 읽어도 되는 값(층, 골드, 체력)은 **이벤트 없
 2. **`Update`는 `GameLoop`에만 있다.** 매 프레임 갱신이 필요하면 `GameLoop`이 호출해준다.
 3. **상태를 바꾸는 경로는 하나씩만 둔다.** 골드는 `TrySpendGold`로만 줄고, 강화 단계는
    `StatUpgrades.TryPurchase`로만 오른다(`StatUpgrade`의 변경 메서드는 `internal`).
+   **`CharacterStats`에 값을 쓰는 것은 `StatComposer`뿐이다** — 강화와 장비가 같은 스탯에
+   기여하므로 각자 대입하면 서로를 덮어쓴다. 그래서 구매와 착용도 `StatComposer`가 감싼다.
 
 ---
 
@@ -174,10 +180,15 @@ Assets/_Project/
 │   │   ├── BattleProgress.cs
 │   │   ├── CharacterStats.cs
 │   │   └── DamageResult.cs
+│   ├── Equipment/
+│   │   ├── EquipmentDefinition.cs
+│   │   ├── EquipmentTable.cs
+│   │   └── Inventory.cs
 │   └── Progression/
 │       ├── FloorFormula.cs
 │       ├── StatUpgrade.cs
-│       └── StatUpgrades.cs
+│       ├── StatUpgrades.cs
+│       └── StatComposer.cs
 ├── Presentation/                Game.Presentation (UnityEngine)
 │   ├── GameLoop.cs
 │   ├── BattleHud.cs
