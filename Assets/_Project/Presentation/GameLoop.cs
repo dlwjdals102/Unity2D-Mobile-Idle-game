@@ -19,34 +19,35 @@ namespace Game.Presentation
 
         [SerializeField] private BattleHud _hud;
         [SerializeField] private DamagePopupSpawner _popupSpawner;
+        [SerializeField] private StatUpgradeButton _attackPowerButton;
+        [SerializeField] private StatUpgradeButton _criticalMultiplierButton;
 
-        [Header("시작 스탯")]
-        [SerializeField] private double _attackPower = 5d;
+        [Header("강화로 오르지 않는 스탯")]
         [SerializeField] private double _attacksPerSecond = 2d;
         [SerializeField] private double _criticalChance = 0.15d;
-        [SerializeField] private double _criticalMultiplier = 2d;
 
         private BattleRunner _battle;
+        private StatUpgrades _upgrades;
         private SaveStore _saveStore;
         private float _secondsSinceLastSave;
 
         private void Awake()
         {
-            if (_hud == null || _popupSpawner == null)
+            if (_hud == null || _popupSpawner == null ||
+                _attackPowerButton == null || _criticalMultiplierButton == null)
             {
                 // 인스펙터 연결 누락은 씬 작업에서 가장 흔한 실수라, 조용히 NullReference로
                 // 터지는 대신 무엇이 빠졌는지 알려주고 멈춘다.
-                Debug.LogError("GameLoop: Hud 또는 PopupSpawner가 인스펙터에 연결되지 않았다.", this);
+                Debug.LogError("GameLoop: 인스펙터에 연결되지 않은 참조가 있다.", this);
                 enabled = false;
                 return;
             }
 
+            // 공격력과 치명타 배율은 StatUpgrades가 단계에서 계산해 채운다.
             var stats = new CharacterStats
             {
-                AttackPower = _attackPower,
                 AttacksPerSecond = _attacksPerSecond,
-                CriticalChance = _criticalChance,
-                CriticalMultiplier = _criticalMultiplier
+                CriticalChance = _criticalChance
             };
 
             _saveStore = new SaveStore(
@@ -54,10 +55,17 @@ namespace Game.Presentation
                 data => JsonUtility.ToJson(data),
                 json => JsonUtility.FromJson<SaveData>(json));
 
-            _battle = new BattleRunner(FloorFormula.Default, stats, new SystemRandomSource(), LoadProgress());
+            bool hasSave = _saveStore.TryLoad(out SaveData saved);
+
+            _battle = new BattleRunner(FloorFormula.Default, stats, new SystemRandomSource(), ReadProgress(hasSave, saved));
+            _upgrades = StatUpgrades.CreateDefault(stats, _battle);
+
+            if (hasSave) _upgrades.Restore(saved.attackPowerLevel, saved.criticalMultiplierLevel);
 
             _hud.Bind(_battle);
             _popupSpawner.Bind(_battle);
+            _attackPowerButton.Bind(_upgrades, _upgrades.AttackPower);
+            _criticalMultiplierButton.Bind(_upgrades, _upgrades.CriticalMultiplier);
         }
 
         private void Update()
@@ -66,7 +74,10 @@ namespace Game.Presentation
 
             _battle.Tick(deltaSeconds);
             _popupSpawner.Tick(deltaSeconds);
+
             _hud.Refresh();
+            _attackPowerButton.Refresh(_battle.Gold);
+            _criticalMultiplierButton.Refresh(_battle.Gold);
 
             _secondsSinceLastSave += deltaSeconds;
             if (_secondsSinceLastSave >= AutoSaveIntervalSeconds) Save();
@@ -80,14 +91,14 @@ namespace Game.Presentation
 
         private void OnApplicationQuit() => Save();
 
-        private BattleProgress LoadProgress()
+        private static BattleProgress ReadProgress(bool hasSave, SaveData saved)
         {
-            if (!_saveStore.TryLoad(out SaveData data)) return BattleProgress.Start;
+            if (!hasSave) return BattleProgress.Start;
 
             return new BattleProgress(
-                data.floor,
-                data.killsOnFloor,
-                new BigNumber(data.goldMantissa, data.goldExponent));
+                saved.floor,
+                saved.killsOnFloor,
+                new BigNumber(saved.goldMantissa, saved.goldExponent));
         }
 
         private void Save()
@@ -103,7 +114,9 @@ namespace Game.Presentation
                 floor = progress.Floor,
                 killsOnFloor = progress.KillsOnFloor,
                 goldMantissa = progress.Gold.Mantissa,
-                goldExponent = progress.Gold.Exponent
+                goldExponent = progress.Gold.Exponent,
+                attackPowerLevel = _upgrades.AttackPower.Level,
+                criticalMultiplierLevel = _upgrades.CriticalMultiplier.Level
             });
         }
     }
