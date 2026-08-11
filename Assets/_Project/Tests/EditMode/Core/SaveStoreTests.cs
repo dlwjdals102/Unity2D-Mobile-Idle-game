@@ -34,7 +34,9 @@ namespace Game.Core.Tests
             data.floor.ToString(CultureInfo.InvariantCulture),
             data.killsOnFloor.ToString(CultureInfo.InvariantCulture),
             data.goldMantissa.ToString("R", CultureInfo.InvariantCulture),
-            data.goldExponent.ToString(CultureInfo.InvariantCulture));
+            data.goldExponent.ToString(CultureInfo.InvariantCulture),
+            data.attackPowerLevel.ToString(CultureInfo.InvariantCulture),
+            data.criticalMultiplierLevel.ToString(CultureInfo.InvariantCulture));
 
         private static SaveData Deserialize(string text)
         {
@@ -46,7 +48,9 @@ namespace Game.Core.Tests
                 floor = int.Parse(parts[2], CultureInfo.InvariantCulture),
                 killsOnFloor = int.Parse(parts[3], CultureInfo.InvariantCulture),
                 goldMantissa = double.Parse(parts[4], CultureInfo.InvariantCulture),
-                goldExponent = int.Parse(parts[5], CultureInfo.InvariantCulture)
+                goldExponent = int.Parse(parts[5], CultureInfo.InvariantCulture),
+                attackPowerLevel = int.Parse(parts[6], CultureInfo.InvariantCulture),
+                criticalMultiplierLevel = int.Parse(parts[7], CultureInfo.InvariantCulture)
             };
         }
 
@@ -115,21 +119,68 @@ namespace Game.Core.Tests
             Assert.IsNull(loaded);
         }
 
-        [Test]
-        public void TryLoad_UnknownVersion_ReturnsFalse()
-        {
-            CreateStore().Save(new SaveData { floor = 3 });
-
-            // 파일 자체는 멀쩡하지만 모르는 버전이 나온 상황.
-            var storeSeeingFutureVersion = new SaveStore(_filePath, Serialize, text =>
+        /// <summary>파일은 멀쩡하지만 역직렬화 결과가 특정 버전으로 나오는 상황을 만든다.</summary>
+        private SaveStore CreateStoreSeeingVersion(int version) =>
+            new SaveStore(_filePath, Serialize, text =>
             {
                 SaveData data = Deserialize(text);
-                data.version = SaveData.CurrentVersion + 1;
+                data.version = version;
                 return data;
             });
 
-            Assert.IsFalse(storeSeeingFutureVersion.TryLoad(out SaveData loaded));
+        [Test]
+        public void TryLoad_FutureVersion_ReturnsFalse()
+        {
+            CreateStore().Save(new SaveData { floor = 3 });
+
+            // 이 빌드보다 새 세이브는 무엇이 들었는지 알 수 없으므로 건드리지 않는다.
+            Assert.IsFalse(CreateStoreSeeingVersion(SaveData.CurrentVersion + 1).TryLoad(out SaveData loaded));
             Assert.IsNull(loaded);
+        }
+
+        [Test]
+        public void TryLoad_UnknownOldVersion_ReturnsFalse()
+        {
+            CreateStore().Save(new SaveData { floor = 3 });
+
+            // 마이그레이션 경로가 없는 옛 버전. 잘못 복원하느니 새 게임이 낫다.
+            Assert.IsFalse(CreateStoreSeeingVersion(0).TryLoad(out SaveData loaded));
+            Assert.IsNull(loaded);
+        }
+
+        [Test]
+        public void TryLoad_MigratesVersion1ToCurrent()
+        {
+            CreateStore().Save(new SaveData
+            {
+                floor = 5,
+                killsOnFloor = 2,
+                goldMantissa = 3.5d,
+                goldExponent = 4
+            });
+
+            Assert.IsTrue(CreateStoreSeeingVersion(1).TryLoad(out SaveData loaded));
+
+            Assert.AreEqual(SaveData.CurrentVersion, loaded.version);
+
+            // v1에 있던 값은 그대로 살아남는다.
+            Assert.AreEqual(5, loaded.floor);
+            Assert.AreEqual(2, loaded.killsOnFloor);
+            Assert.AreEqual(4, loaded.goldExponent);
+
+            // v2에서 추가된 값은 0단계로 시작한다.
+            Assert.AreEqual(0, loaded.attackPowerLevel);
+            Assert.AreEqual(0, loaded.criticalMultiplierLevel);
+        }
+
+        [Test]
+        public void SaveThenLoad_RoundTripsUpgradeLevels()
+        {
+            CreateStore().Save(new SaveData { attackPowerLevel = 31, criticalMultiplierLevel = 7 });
+
+            Assert.IsTrue(CreateStore().TryLoad(out SaveData loaded));
+            Assert.AreEqual(31, loaded.attackPowerLevel);
+            Assert.AreEqual(7, loaded.criticalMultiplierLevel);
         }
 
         [Test]

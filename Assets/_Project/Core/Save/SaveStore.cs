@@ -65,12 +65,39 @@ namespace Game.Core.Save
             data = _deserialize(payload);
             if (data == null) return false;
 
-            // 버전이 다르면 아직은 포기한다. 스키마가 처음 바뀌는 시점에
-            // 여기에 마이그레이션을 넣는다(예: v1 -> v2에서 스탯 강화 단계 추가).
-            if (data.version != SaveData.CurrentVersion)
+            if (!TryMigrate(data))
             {
                 data = null;
                 return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 옛 버전 세이브를 현재 스키마로 한 단계씩 끌어올린다.
+        /// 각 단계는 바로 다음 버전으로만 옮기므로, 버전이 몇 개 밀려 있어도 순서대로 통과한다.
+        /// 앞으로 스키마를 바꿀 때마다 여기에 case를 하나씩 추가한다.
+        /// </summary>
+        private static bool TryMigrate(SaveData data)
+        {
+            // 이 빌드보다 새 버전의 세이브는 무엇이 들었는지 알 수 없으므로 손대지 않는다.
+            if (data.version > SaveData.CurrentVersion) return false;
+
+            while (data.version < SaveData.CurrentVersion)
+            {
+                switch (data.version)
+                {
+                    case 1:
+                        // v1에는 강화 단계가 없었다. 새 필드는 0단계로 두면 되고,
+                        // 역직렬화가 이미 0으로 채워두므로 버전만 올린다.
+                        data.version = 2;
+                        break;
+
+                    default:
+                        // 알 수 없는 버전. 새 게임으로 시작하는 편이 잘못된 상태로 복원하는 것보다 낫다.
+                        return false;
+                }
             }
 
             return true;
