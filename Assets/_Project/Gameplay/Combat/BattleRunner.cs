@@ -30,12 +30,19 @@ namespace Game.Gameplay.Combat
         private double _secondsUntilNextAttack;
 
         public BattleRunner(FloorFormula formula, CharacterStats stats, IRandomSource random)
+            : this(formula, stats, random, BattleProgress.Start) { }
+
+        public BattleRunner(FloorFormula formula, CharacterStats stats, IRandomSource random, BattleProgress progress)
         {
             _formula = formula ?? throw new ArgumentNullException(nameof(formula));
             _stats = stats ?? throw new ArgumentNullException(nameof(stats));
             _random = random ?? throw new ArgumentNullException(nameof(random));
 
-            Floor = 1;
+            Floor = progress.Floor;
+            KillsOnFloor = progress.KillsOnFloor;
+            Gold = progress.Gold;
+
+            // 진행 중이던 몬스터의 남은 체력은 저장하지 않는다. 불러오면 항상 새 몬스터가 나온다.
             SpawnMonster();
         }
 
@@ -62,6 +69,9 @@ namespace Game.Gameplay.Combat
 
         /// <summary>현재 층을 넘어가는 데 필요한 처치 수. 보스 층은 한 마리뿐이다.</summary>
         public int RequiredKills => IsBossFloor ? 1 : KillsPerFloor;
+
+        /// <summary>저장에 쓰는 진행 상태 스냅샷.</summary>
+        public BattleProgress Progress => new BattleProgress(Floor, KillsOnFloor, Gold);
 
         /// <summary>
         /// <paramref name="deltaSeconds"/>만큼 전투를 진행한다. 델타가 길면 그 안에 들어가는 공격을

@@ -265,5 +265,80 @@ namespace Game.Gameplay.Tests
 
             Assert.AreEqual(0, kills);
         }
+
+        // ---------- 진행 상태 저장과 복원 ----------
+
+        [Test]
+        public void NewRunner_StartsFromStartProgress()
+        {
+            var runner = CreateRunner(Stats(1d));
+
+            Assert.AreEqual(1, runner.Progress.Floor);
+            Assert.AreEqual(0, runner.Progress.KillsOnFloor);
+            AssertValue(runner.Progress.Gold, 0d);
+        }
+
+        [Test]
+        public void Progress_ReflectsCurrentState()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+
+            runner.Tick(1d);
+            runner.Tick(1d);
+
+            Assert.AreEqual(1, runner.Progress.Floor);
+            Assert.AreEqual(2, runner.Progress.KillsOnFloor);
+            AssertValue(runner.Progress.Gold, FirstFloorGoldReward * 2d);
+        }
+
+        [Test]
+        public void Constructor_WithProgress_RestoresState()
+        {
+            var progress = new BattleProgress(37, 4, new BigNumber(1.5d, 20));
+
+            var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
+
+            Assert.AreEqual(37, runner.Floor);
+            Assert.AreEqual(4, runner.KillsOnFloor);
+            Assert.AreEqual(20, runner.Gold.Exponent);
+            Assert.AreEqual(1.5d, runner.Gold.Mantissa, 1e-9);
+        }
+
+        [Test]
+        public void RestoredRunner_SpawnsMonsterForTheRestoredFloor()
+        {
+            var progress = new BattleProgress(37, 4, BigNumber.Zero);
+
+            var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
+
+            AssertValue(runner.MonsterMaxHealth, FloorFormula.Default.MonsterHealth(37).ToDouble());
+            AssertValue(runner.MonsterHealth, runner.MonsterMaxHealth.ToDouble());
+        }
+
+        [Test]
+        public void RestoringOntoABossFloor_RestartsTheBossTimer()
+        {
+            var progress = new BattleProgress(BattleRunner.BossFloorInterval, 0, BigNumber.Zero);
+
+            var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
+
+            Assert.IsTrue(runner.IsBossFloor);
+            Assert.AreEqual(BattleRunner.BossTimeLimitSeconds, runner.BossSecondsRemaining, 1e-6);
+        }
+
+        [Test]
+        public void Progress_SurvivesARoundTripThroughANewRunner()
+        {
+            var original = CreateRunner(Stats(FirstFloorMonsterHealth));
+            for (int i = 0; i < 25; i++) original.Tick(1d);
+
+            var restored = new BattleRunner(
+                FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, original.Progress);
+
+            Assert.AreEqual(original.Floor, restored.Floor);
+            Assert.AreEqual(original.KillsOnFloor, restored.KillsOnFloor);
+            Assert.AreEqual(original.Gold.Mantissa, restored.Gold.Mantissa, 1e-12);
+            Assert.AreEqual(original.Gold.Exponent, restored.Gold.Exponent);
+        }
     }
 }
