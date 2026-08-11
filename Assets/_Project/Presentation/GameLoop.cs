@@ -1,4 +1,6 @@
+using System.IO;
 using Game.Core;
+using Game.Core.Save;
 using Game.Gameplay.Combat;
 using Game.Gameplay.Progression;
 using UnityEngine;
@@ -6,11 +8,15 @@ using UnityEngine;
 namespace Game.Presentation
 {
     /// <summary>
-    /// 게임의 진입점. 도메인 객체를 만들어 표현 계층에 연결하고, 매 프레임 전투를 진행시킨다.
+    /// 게임의 진입점. 세이브를 불러와 도메인 객체를 만들고, 매 프레임 전투를 진행시키며,
+    /// 주기적으로 그리고 앱이 내려갈 때 저장한다.
     /// 씬 전체에서 <c>Update</c>를 가지는 유일한 컴포넌트다.
     /// </summary>
     public sealed class GameLoop : MonoBehaviour
     {
+        private const string SaveFileName = "save.json";
+        private const float AutoSaveIntervalSeconds = 30f;
+
         [SerializeField] private BattleHud _hud;
         [SerializeField] private DamagePopupSpawner _popupSpawner;
 
@@ -21,6 +27,8 @@ namespace Game.Presentation
         [SerializeField] private double _criticalMultiplier = 2d;
 
         private BattleRunner _battle;
+        private SaveStore _saveStore;
+        private float _secondsSinceLastSave;
 
         private void Awake()
         {
@@ -41,7 +49,12 @@ namespace Game.Presentation
                 CriticalMultiplier = _criticalMultiplier
             };
 
-            _battle = new BattleRunner(FloorFormula.Default, stats, new SystemRandomSource());
+            _saveStore = new SaveStore(
+                Path.Combine(Application.persistentDataPath, SaveFileName),
+                data => JsonUtility.ToJson(data),
+                json => JsonUtility.FromJson<SaveData>(json));
+
+            _battle = new BattleRunner(FloorFormula.Default, stats, new SystemRandomSource(), LoadProgress());
 
             _hud.Bind(_battle);
             _popupSpawner.Bind(_battle);
@@ -54,6 +67,44 @@ namespace Game.Presentation
             _battle.Tick(deltaSeconds);
             _popupSpawner.Tick(deltaSeconds);
             _hud.Refresh();
+
+            _secondsSinceLastSave += deltaSeconds;
+            if (_secondsSinceLastSave >= AutoSaveIntervalSeconds) Save();
+        }
+
+        /// <summary>모바일에서 앱이 백그라운드로 내려가는 시점. 여기서 저장하지 않으면 그대로 종료될 수 있다.</summary>
+        private void OnApplicationPause(bool isPaused)
+        {
+            if (isPaused) Save();
+        }
+
+        private void OnApplicationQuit() => Save();
+
+        private BattleProgress LoadProgress()
+        {
+            if (!_saveStore.TryLoad(out SaveData data)) return BattleProgress.Start;
+
+            return new BattleProgress(
+                data.floor,
+                data.killsOnFloor,
+                new BigNumber(data.goldMantissa, data.goldExponent));
+        }
+
+        private void Save()
+        {
+            // Awake에서 멈춘 경우와, 앱이 내려갈 때 Awake보다 먼저 불리는 경우를 막는다.
+            if (_battle == null) return;
+
+            _secondsSinceLastSave = 0f;
+
+            BattleProgress progress = _battle.Progress;
+            _saveStore.Save(new SaveData
+            {
+                floor = progress.Floor,
+                killsOnFloor = progress.KillsOnFloor,
+                goldMantissa = progress.Gold.Mantissa,
+                goldExponent = progress.Gold.Exponent
+            });
         }
     }
 }
