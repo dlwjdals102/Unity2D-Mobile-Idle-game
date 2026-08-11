@@ -43,6 +43,12 @@ namespace Game.Core.Save
             else File.Move(temporaryPath, _filePath);
         }
 
+        /// <summary>세이브 파일을 지운다. 파일이 없으면 아무 일도 하지 않는다.</summary>
+        public void Delete()
+        {
+            if (File.Exists(_filePath)) File.Delete(_filePath);
+        }
+
         /// <summary>
         /// 세이브를 읽는다. 파일이 없거나, 손상됐거나, 모르는 버전이면 <c>false</c>를 돌려준다.
         /// 이 경우 호출자는 새 게임으로 시작하면 된다.

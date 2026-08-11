@@ -214,6 +214,38 @@ namespace Game.Core.Tests
         }
 
         [Test]
+        public void Delete_RemovesTheSaveFile()
+        {
+            SaveStore store = CreateStore();
+            store.Save(new SaveData { floor = 7 });
+
+            store.Delete();
+
+            Assert.IsFalse(File.Exists(_filePath));
+            Assert.IsFalse(store.TryLoad(out SaveData loaded));
+            Assert.IsNull(loaded);
+        }
+
+        [Test]
+        public void Delete_WithoutASaveFile_DoesNothing()
+        {
+            Assert.DoesNotThrow(() => CreateStore().Delete());
+        }
+
+        [Test]
+        public void SaveAfterDelete_StartsAFreshFile()
+        {
+            SaveStore store = CreateStore();
+            store.Save(new SaveData { floor = 7 });
+            store.Delete();
+
+            store.Save(new SaveData { floor = 1 });
+
+            Assert.IsTrue(store.TryLoad(out SaveData loaded));
+            Assert.AreEqual(1, loaded.floor);
+        }
+
+        [Test]
         public void Save_OverwritesExistingSave()
         {
             SaveStore store = CreateStore();
