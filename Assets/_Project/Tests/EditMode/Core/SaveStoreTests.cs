@@ -36,7 +36,8 @@ namespace Game.Core.Tests
             data.goldMantissa.ToString("R", CultureInfo.InvariantCulture),
             data.goldExponent.ToString(CultureInfo.InvariantCulture),
             data.attackPowerLevel.ToString(CultureInfo.InvariantCulture),
-            data.criticalMultiplierLevel.ToString(CultureInfo.InvariantCulture));
+            data.criticalMultiplierLevel.ToString(CultureInfo.InvariantCulture),
+            data.diamonds.ToString(CultureInfo.InvariantCulture));
 
         private static SaveData Deserialize(string text)
         {
@@ -50,7 +51,8 @@ namespace Game.Core.Tests
                 goldMantissa = double.Parse(parts[4], CultureInfo.InvariantCulture),
                 goldExponent = int.Parse(parts[5], CultureInfo.InvariantCulture),
                 attackPowerLevel = int.Parse(parts[6], CultureInfo.InvariantCulture),
-                criticalMultiplierLevel = int.Parse(parts[7], CultureInfo.InvariantCulture)
+                criticalMultiplierLevel = int.Parse(parts[7], CultureInfo.InvariantCulture),
+                diamonds = int.Parse(parts[8], CultureInfo.InvariantCulture)
             };
         }
 
@@ -64,12 +66,14 @@ namespace Game.Core.Tests
                 floor = 42,
                 killsOnFloor = 7,
                 goldMantissa = 1.2345d,
-                goldExponent = 400
+                goldExponent = 400,
+                diamonds = 135
             });
 
             Assert.IsTrue(CreateStore().TryLoad(out SaveData loaded));
             Assert.AreEqual(42, loaded.floor);
             Assert.AreEqual(7, loaded.killsOnFloor);
+            Assert.AreEqual(135, loaded.diamonds);
 
             // 지수 400은 double로는 표현할 수 없는 크기다. 가수와 지수를 따로 저장하는 이유다.
             Assert.AreEqual(1.2345d, loaded.goldMantissa, 1e-12);
@@ -149,7 +153,7 @@ namespace Game.Core.Tests
         }
 
         [Test]
-        public void TryLoad_MigratesVersion1ToCurrent()
+        public void TryLoad_MigratesVersion1ThroughEveryStep()
         {
             CreateStore().Save(new SaveData
             {
@@ -159,6 +163,7 @@ namespace Game.Core.Tests
                 goldExponent = 4
             });
 
+            // v1은 현재 버전보다 두 단계 아래다. 체인이 1 -> 2 -> 3을 순서대로 통과해야 한다.
             Assert.IsTrue(CreateStoreSeeingVersion(1).TryLoad(out SaveData loaded));
 
             Assert.AreEqual(SaveData.CurrentVersion, loaded.version);
@@ -168,9 +173,23 @@ namespace Game.Core.Tests
             Assert.AreEqual(2, loaded.killsOnFloor);
             Assert.AreEqual(4, loaded.goldExponent);
 
-            // v2에서 추가된 값은 0단계로 시작한다.
+            // 이후 버전에서 추가된 값은 0에서 시작한다.
             Assert.AreEqual(0, loaded.attackPowerLevel);
             Assert.AreEqual(0, loaded.criticalMultiplierLevel);
+            Assert.AreEqual(0, loaded.diamonds);
+        }
+
+        [Test]
+        public void TryLoad_MigratesVersion2ToCurrent()
+        {
+            CreateStore().Save(new SaveData { floor = 12, attackPowerLevel = 8 });
+
+            Assert.IsTrue(CreateStoreSeeingVersion(2).TryLoad(out SaveData loaded));
+
+            Assert.AreEqual(SaveData.CurrentVersion, loaded.version);
+            Assert.AreEqual(12, loaded.floor);
+            Assert.AreEqual(8, loaded.attackPowerLevel, "v2에 있던 강화 단계는 유지된다");
+            Assert.AreEqual(0, loaded.diamonds);
         }
 
         [Test]

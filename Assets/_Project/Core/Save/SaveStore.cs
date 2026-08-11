@@ -94,6 +94,11 @@ namespace Game.Core.Save
                         data.version = 2;
                         break;
 
+                    case 2:
+                        // v2에는 다이아가 없었다. 0에서 시작한다.
+                        data.version = 3;
+                        break;
+
                     default:
                         // 알 수 없는 버전. 새 게임으로 시작하는 편이 잘못된 상태로 복원하는 것보다 낫다.
                         return false;

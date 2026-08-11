@@ -12,8 +12,9 @@ namespace Game.Core.Save
         /// <summary>
         /// 현재 스키마 버전. 저장 항목이 바뀌면 올리고 <c>SaveStore</c>에 마이그레이션을 추가한다.
         /// <para>v1 → v2: 스탯 강화 단계 추가</para>
+        /// <para>v2 → v3: 다이아 추가</para>
         /// </summary>
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         public int version = CurrentVersion;
 
@@ -35,5 +36,8 @@ namespace Game.Core.Save
         // 수치는 단계에서 계산되므로, 밸런싱을 바꿔도 기존 세이브가 그대로 새 수식을 따른다.
         public int attackPowerLevel;
         public int criticalMultiplierLevel;
+
+        // v3에서 추가. 보스에서만 나오는 재화라 값이 작아 int로 충분하다.
+        public int diamonds;
     }
 }
