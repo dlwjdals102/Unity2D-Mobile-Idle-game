@@ -212,6 +212,41 @@ namespace Game.Gameplay.Tests
             Assert.AreEqual(BattleRunner.BossFloorInterval, runner.Floor, "시도에 실패하면 같은 층에 머물러야 한다");
         }
 
+        [Test]
+        public void KillingBoss_AwardsDiamonds()
+        {
+            var runner = CreateRunner(Stats(1e6d));
+            AdvanceTo(runner, BattleRunner.BossFloorInterval);
+
+            Assert.AreEqual(0, runner.Diamonds, "보스 층에 도달한 것만으로는 다이아가 나오지 않는다");
+
+            runner.Tick(1d);
+
+            Assert.AreEqual(BattleRunner.BossDiamondReward, runner.Diamonds);
+        }
+
+        [Test]
+        public void KillingNormalMonsters_AwardsNoDiamonds()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+
+            for (int i = 0; i < 5; i++) runner.Tick(1d);
+
+            Assert.AreEqual(5, runner.KillsOnFloor);
+            Assert.AreEqual(0, runner.Diamonds);
+        }
+
+        [Test]
+        public void FailedBossAttempt_AwardsNoDiamonds()
+        {
+            BattleRunner runner = CreateRunnerStalledOnBoss();
+
+            runner.Tick(29d);
+            runner.Tick(2d);   // 제한시간 초과로 보스가 회복한다
+
+            Assert.AreEqual(0, runner.Diamonds);
+        }
+
         // ---------- 이벤트 ----------
 
         [Test]
@@ -326,7 +361,7 @@ namespace Game.Gameplay.Tests
         [Test]
         public void Constructor_WithProgress_RestoresState()
         {
-            var progress = new BattleProgress(37, 4, new BigNumber(1.5d, 20));
+            var progress = new BattleProgress(37, 4, new BigNumber(1.5d, 20), 9);
 
             var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
 
@@ -334,12 +369,13 @@ namespace Game.Gameplay.Tests
             Assert.AreEqual(4, runner.KillsOnFloor);
             Assert.AreEqual(20, runner.Gold.Exponent);
             Assert.AreEqual(1.5d, runner.Gold.Mantissa, 1e-9);
+            Assert.AreEqual(9, runner.Diamonds);
         }
 
         [Test]
         public void RestoredRunner_SpawnsMonsterForTheRestoredFloor()
         {
-            var progress = new BattleProgress(37, 4, BigNumber.Zero);
+            var progress = new BattleProgress(37, 4, BigNumber.Zero, 0);
 
             var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
 
@@ -350,7 +386,7 @@ namespace Game.Gameplay.Tests
         [Test]
         public void RestoringOntoABossFloor_RestartsTheBossTimer()
         {
-            var progress = new BattleProgress(BattleRunner.BossFloorInterval, 0, BigNumber.Zero);
+            var progress = new BattleProgress(BattleRunner.BossFloorInterval, 0, BigNumber.Zero, 0);
 
             var runner = new BattleRunner(FloorFormula.Default, Stats(1d), ScriptedRandomSource.NeverCritical, progress);
 

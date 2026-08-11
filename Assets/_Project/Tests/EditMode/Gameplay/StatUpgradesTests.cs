@@ -24,7 +24,7 @@ namespace Game.Gameplay.Tests
                 FloorFormula.Default,
                 _stats,
                 ScriptedRandomSource.NeverCritical,
-                new BattleProgress(1, 0, gold));
+                new BattleProgress(1, 0, gold, 0));
 
             _upgrades = StatUpgrades.CreateDefault(_stats, _battle);
         }

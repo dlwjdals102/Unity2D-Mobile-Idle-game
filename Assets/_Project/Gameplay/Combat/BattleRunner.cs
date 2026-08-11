@@ -21,6 +21,12 @@ namespace Game.Gameplay.Combat
         /// <summary>보스를 잡는 데 주어지는 시간. 넘기면 시도가 처음부터 다시 시작된다.</summary>
         public const double BossTimeLimitSeconds = 30d;
 
+        /// <summary>
+        /// 보스 하나를 잡을 때 나오는 다이아. 층과 무관한 고정값이라 이른 보스도 값어치가 있다.
+        /// 다이아의 유일한 획득 경로다.
+        /// </summary>
+        public const int BossDiamondReward = 5;
+
         private const double BossHealthMultiplier = 12d;
 
         private readonly FloorFormula _formula;
@@ -41,6 +47,7 @@ namespace Game.Gameplay.Combat
             Floor = progress.Floor;
             KillsOnFloor = progress.KillsOnFloor;
             Gold = progress.Gold;
+            Diamonds = progress.Diamonds;
 
             // 진행 중이던 몬스터의 남은 체력은 저장하지 않는다. 불러오면 항상 새 몬스터가 나온다.
             SpawnMonster();
@@ -62,6 +69,8 @@ namespace Game.Gameplay.Combat
 
         public BigNumber Gold { get; private set; }
 
+        public int Diamonds { get; private set; }
+
         public bool IsBossFloor => Floor % BossFloorInterval == 0;
 
         /// <summary>보스에게 남은 시간. <see cref="IsBossFloor"/>일 때만 의미가 있다.</summary>
@@ -71,7 +80,7 @@ namespace Game.Gameplay.Combat
         public int RequiredKills => IsBossFloor ? 1 : KillsPerFloor;
 
         /// <summary>저장에 쓰는 진행 상태 스냅샷.</summary>
-        public BattleProgress Progress => new BattleProgress(Floor, KillsOnFloor, Gold);
+        public BattleProgress Progress => new BattleProgress(Floor, KillsOnFloor, Gold, Diamonds);
 
         /// <summary>
         /// 골드가 충분하면 차감하고 <c>true</c>. 부족하면 아무것도 하지 않고 <c>false</c>.
@@ -122,6 +131,10 @@ namespace Game.Gameplay.Combat
             if (MonsterHealth > BigNumber.Zero) return;
 
             Gold += _formula.GoldReward(Floor);
+
+            // 층이 오르기 전에 판정해야 방금 잡은 몬스터가 보스였는지 알 수 있다.
+            if (IsBossFloor) Diamonds += BossDiamondReward;
+
             KillsOnFloor++;
             MonsterKilled?.Invoke();
 
