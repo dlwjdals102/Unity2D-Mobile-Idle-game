@@ -247,6 +247,65 @@ namespace Game.Gameplay.Tests
             Assert.AreEqual(0, runner.Diamonds);
         }
 
+        // ---------- 개발용 층 클리어 ----------
+
+        [Test]
+        public void ClearFloorImmediately_AdvancesExactlyOneFloor()
+        {
+            var runner = CreateRunner(Stats(1d));
+
+            runner.ClearFloorImmediately();
+
+            Assert.AreEqual(2, runner.Floor);
+            Assert.AreEqual(0, runner.KillsOnFloor);
+        }
+
+        [Test]
+        public void ClearFloorImmediately_AwardsGoldForEveryMonsterOnTheFloor()
+        {
+            var runner = CreateRunner(Stats(1d));
+
+            runner.ClearFloorImmediately();
+
+            AssertValue(runner.Gold, FirstFloorGoldReward * BattleRunner.KillsPerFloor);
+        }
+
+        [Test]
+        public void ClearFloorImmediately_OnlyKillsTheRemainingMonsters()
+        {
+            var runner = CreateRunner(Stats(FirstFloorMonsterHealth));
+            for (int i = 0; i < 4; i++) runner.Tick(1d);   // 4마리는 직접 잡는다
+
+            runner.ClearFloorImmediately();
+
+            Assert.AreEqual(2, runner.Floor);
+
+            // 남은 6마리만 추가로 처치되므로 보상 총액은 10마리분이다.
+            AssertValue(runner.Gold, FirstFloorGoldReward * BattleRunner.KillsPerFloor);
+        }
+
+        [Test]
+        public void ClearFloorImmediately_OnABossFloor_AwardsDiamonds()
+        {
+            BattleRunner runner = CreateRunnerStalledOnBoss();
+
+            runner.ClearFloorImmediately();
+
+            Assert.AreEqual(BattleRunner.BossFloorInterval + 1, runner.Floor);
+            Assert.AreEqual(BattleRunner.BossDiamondReward, runner.Diamonds);
+        }
+
+        [Test]
+        public void ClearFloorImmediately_SpawnsTheNextFloorsMonster()
+        {
+            var runner = CreateRunner(Stats(1d));
+
+            runner.ClearFloorImmediately();
+
+            AssertValue(runner.MonsterMaxHealth, FloorFormula.Default.MonsterHealth(2).ToDouble());
+            AssertValue(runner.MonsterHealth, runner.MonsterMaxHealth.ToDouble());
+        }
+
         // ---------- 이벤트 ----------
 
         [Test]

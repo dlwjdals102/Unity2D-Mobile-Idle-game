@@ -122,6 +122,16 @@ namespace Game.Gameplay.Combat
             SpawnMonster();
         }
 
+        /// <summary>
+        /// 현재 층을 즉시 클리어한다. 개발 중 진행을 건너뛰기 위한 것으로,
+        /// 보상은 정상 처치와 똑같이 지급된다. 그래야 강화나 가챠를 바로 시험해볼 수 있다.
+        /// </summary>
+        public void ClearFloorImmediately()
+        {
+            int floorAtStart = Floor;
+            while (Floor == floorAtStart) KillMonster();
+        }
+
         private void Attack()
         {
             DamageResult damage = ResolveDamage();
@@ -130,6 +140,11 @@ namespace Game.Gameplay.Combat
 
             if (MonsterHealth > BigNumber.Zero) return;
 
+            KillMonster();
+        }
+
+        private void KillMonster()
+        {
             Gold += _formula.GoldReward(Floor);
 
             // 층이 오르기 전에 판정해야 방금 잡은 몬스터가 보스였는지 알 수 있다.
